@@ -1,0 +1,13 @@
+
+# Create a file in the system unit file location for your OS, ex:
+# /etc/systemd/system/logalerts.service
+
+[Unit]
+Description=Logalerts for syslog events
+
+# Update the ExecStart path for python3 and the scan.py script with -daemon flag
+[Service]
+ExecStart=/usr/bin/python3 /opt/logalerts/scan.py -daemon
+StandardOutput=syslog+console
+StandardError=syslog+console
+SyslogIdentifier=logalerts
