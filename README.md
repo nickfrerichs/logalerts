@@ -8,6 +8,8 @@ heavyweight, full featured log aggregation product. Writing your own python code
 ## Overview
 Add an overview here of how logalerts works.
 
+![logalerts diagram](https://user-images.githubusercontent.com/5790350/122434244-8b8ac380-cf5c-11eb-94d1-d53038189a0a.png)
+
 ## Logreaders
 How logreaders work.
 
