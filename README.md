@@ -53,7 +53,7 @@ If invalid, return None to signal that nothing will be passed to logmonitors.
 return None
 ```
 
-###Notes:
+### Notes:
 * There are other optional instance/object variables that can be used such as a watchdog to help alert when a reader has not been
 reading any new lines for a certain time period.
 * Two logreaders can (and should) be used to read the same log file(s). They essentially filter on log entries that are to be used
