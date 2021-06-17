@@ -5,6 +5,8 @@ The framework is intended to strike a balance between flexibility in what is req
 can be created. I created this to be able to leverage my existing Python knowledge in lieu of learning the query langauge/syntax of a more 
 heavyweight, full featured log aggregation product. Writing your own python code is required to make use of the framework.
 
+
+
 ## Overview
 The framework provides classes that can be used to develop your own logreaders and logmonitors.
 
@@ -16,13 +18,15 @@ is made available to store information that remains available to the reader in s
 data is discarded once read.
 
 scan.py: The main program loops though reach log reader, then each monitor subscribed to the reader. It also manages state and
-calls functions avaialble to each monitor to help send alerts and clean up as needed.
+calls functions available to each monitor to help send alerts and clean up as needed.
 
 ![logalerts diagram](https://user-images.githubusercontent.com/5790350/122435800-ed97f880-cf5d-11eb-9088-a862c244572a.png)
 
+
+
 ## Logreaders
 
-Logreaders inherit the Logreader class. Class names must begin with reader_, and at minimum they must at least implement the
+Logreaders inherit the Logreader class. Class names must begin with reader_, and at minimum they must implement the
 json_row function
 
 ```
@@ -49,17 +53,18 @@ If invalid, return None to signal that nothing will be passed to logmonitors.
 return None
 ```
 
-Notes:
+###Notes:
 * There are other optional instance/object variables that can be used such as a watchdog to help alert when a reader has not been
 reading any new lines for a certain time period.
 * Two logreaders can (and should) be used to read the same log file(s). They essentially filter on log entries that are to be used
 by logmonitors. The parent Logreader class will keep track of and only store a single copy of the log file transparently to multiple
-logreaders that may be consumign the log file.
-* Any lines resulting in an error are skipped and a notice of the error can be emailed. After too many errors, the reader is disabled.
+logreaders that may be consuming the log file.
+* Any lines resulting in an error are skipped and a notice of the error can be emailed. After too many errors, the reader is disabled. 
+This makes it important to catch errors and return None if a raw log line does not meet the expected format.
 * Readers have their own state data, mostly used to store stats to aid in error detection and watchdogs.
 
 
-
+### Logreader example
 ```text
 class reader_demo(logreader.Filereader):
 
@@ -97,11 +102,13 @@ class reader_demo(logreader.Filereader):
 logreader example
 ```
 
+
+
 ## Logmonitors
 
 Logmonitors inherit the Logmonitor class. Class names must begin with monitor_, and at minimum they must contain the readers
-instance variable providing a list of logreaders to subscribte to and implement the check function which is called by the main
-program for each row returned by a logreader
+instance variable providing a list of logreaders to subscribe to and implement the check function which is called by the main
+program for each row returned by a logreader.
 
 ```
     readers = [
@@ -111,10 +118,10 @@ program for each row returned by a logreader
     def check(self, row):
 ```
 
-Logmonitors do not need to do anything inside of the check function, but that is where log entries should be analized and data
+Logmonitors do not need to do anything inside of the check function, but that is where log entries should be analyzed and data
 stored in the inhereted state variable to be used later.
 
-Other important functions:
+###Other important functions:
 
 ```
 def complete(self):
@@ -123,20 +130,23 @@ Called once all log entires have been read for the current run, a great place to
 sent.
 
 
+
 ```
 def daily(self):
 ```
-Called once daily at the configured daily hour. Useful for gathering data throughout a day and providing daily reports.
+Called once daily at the configured daily hour. Useful for providing daily reports on data gathered throughout the day.
+
 
 
 ```
 def queue_email(self, email_to, email_subject, email_body):
 ```
-When an alert needs to be sent, use this function to add it to the queue. Emails are sent all at once at the end of the run.
+When an alert needs to be sent, use this function to add it to the queue. All queued emails are then sent all at once at the 
+end of the run.
 
 
 
-Example
+### Logmonitor example
 ```
 class monitor_demo(logmonitor.Logmonitor):
 
@@ -160,4 +170,4 @@ class monitor_demo(logmonitor.Logmonitor):
 
 ## State data and Dynamic state data
 
-
+(add later)
