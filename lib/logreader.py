@@ -144,7 +144,7 @@ class Filereader(Logreader):
 
     def read(self):
         for log_file in self.temp_files:
-            with open(log_file) as f:
+            with open(log_file, errors="replace") as f:
                 try:
                     for line in f:
                         if line != None:
