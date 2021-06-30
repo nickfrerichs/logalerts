@@ -2,31 +2,6 @@ import time
 import json
 from collections import OrderedDict
 
-    # data_stored_in_file = {
-    #     "regular item" : "permenant",
-    #     "regular item2" : "also permenant",
-    #     "_dynamic_state" : {
-    #         "lists" : {
-    #             "list1" : {
-    #                 "expire" : 3600,
-    #                 "data" : [
-    #                         { 
-    #                             "created" : 123412423,
-    #                             "value"  : "nickf" 
-    #                         },
-    #                         {
-    #                             "created" : 123412423,
-    #                             "value"  : "admin-nickf"
-    #                         }
-    #                     ]
-    #                 }
-    #             }
-    #         }
-    #     }
-    # }
-
-
-        
 class DynamicState:
 
     def __init__(self, data):
