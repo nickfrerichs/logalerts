@@ -75,7 +75,10 @@ class ModuleManager:
             module = load_module(mod_name, modules_name, enabled_list[mod_name])
             if module is not None: 
                 self.loaded_modules[mod_name] = module
-                out.say("Module loaded: "+mod_name,2)
+                if module.enabled:
+                    out.say("Module loaded: "+mod_name,2)
+                else:
+                    out.say("Module was disabled on load: "+mod_name,1)
 
     def get_active(self):
         active_modules = dict()

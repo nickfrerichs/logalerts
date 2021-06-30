@@ -145,40 +145,34 @@ class Filereader(Logreader):
     def read(self):
         for log_file in self.temp_files:
             with open(log_file, errors="replace") as f:
-                try:
-                    for line in f:
-                        if line != None:
-                            try:
-                                new_row = self.json_row(line.strip())
-                                if new_row is None:
-                                    self.none_count += 1
-                                    continue
-                                new_row["logreader_name"] = self.__class__.__name__
-                                yield new_row
-                                self.read_count += 1
-                            except BaseException as e:
-                                if self.debug_modules:
-                                    raise(e)
-                                msg = "ERROR in "+self.__class__.__name__+" reading line: "+line+"\n"
-                                msg += str(traceback.format_exc())
-                                self.errors.append(msg)
-
-                                # Over 100MB of error text, time to disable
-                                if sys.getsizeof(self.errors) > 104857600:
-                                    msg = "Too many errors current run: "+str(len(self.errors))
-                                    out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader disabled: "+self.__class__.__name__, msg)
-                                    self.enabled = False
-                                    return
-                                
+                for line in f:
+                    if line != None:
+                        try:
+                            new_row = self.json_row(line.strip())
+                            if new_row is None:
+                                self.none_count += 1
                                 continue
-                        else:
+                            new_row["logreader_name"] = self.__class__.__name__
+                            yield new_row
+                            self.read_count += 1
+                        except BaseException as e:
+                            if self.debug_modules:
+                                raise(e)
+                            msg = "ERROR in "+self.__class__.__name__+" reading line: "+line+"\n"
+                            msg += str(traceback.format_exc())
+                            self.errors.append(msg)
+
+                            # Over 100MB of error text, time to disable
+                            if sys.getsizeof(self.errors) > 104857600:
+                                msg = "Too many errors current run: "+str(len(self.errors))
+                                out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader disabled: "+self.__class__.__name__, msg)
+                                self.enabled = False
+                                return
+                            
                             continue
-                except UnicodeDecodeError:
-                    if self.debug_modules:
-                        raise(e)
-                    msg = "ERROR in "+self.__class__.__name__+", decoding error\n"
-                    msg += str(traceback.format_exc())
-                    self.errors.append(msg)
+                    else:
+                        continue
+
 
         self.state["last_read_count"] = self.read_count
         self.state["last_none_count"] = self.none_count

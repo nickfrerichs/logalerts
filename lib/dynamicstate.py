@@ -161,6 +161,14 @@ class DynamicList:
         )
         self.session_list.append(value)
 
+    def touch(self, value):
+        created = int(time.time())
+        for d in self.data:
+            if d["value"] == value:
+                d["created"] = created
+                return True
+        return False
+
     def counts(self, item_key):
 
         item_counts = {}

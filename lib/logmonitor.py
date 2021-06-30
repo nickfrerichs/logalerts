@@ -11,6 +11,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
 import dynamicstate
 import config
 import output as out
+import glob
+import importlib
 
 class Logmonitor:
 
@@ -40,9 +42,11 @@ class Logmonitor:
         except AttributeError:
             self.force_recipient = None
 
+        self.enabled = True    
         self.cfg = {}
+        self.load_file_configs()
         self.runtimes = {}
-        self.enabled = True
+
         self.state = {}
         self.dstate = None
         self.__load_state()
@@ -82,7 +86,42 @@ class Logmonitor:
             self.dstate = dynamicstate.DynamicState(self.state["_dynamic_state"])
 
 
+    def load_file_configs(self):
+        # self.cfg_file: Check for and load config from dedicated file first
+        cfg_name = "config_"+self.__class__.__name__
+        cfg_filename = os.path.join(os.path.dirname(__file__),"../logmonitors/config_file", cfg_name+".py")
+        if os.path.exists(cfg_filename):
+            try:
+                spec = importlib.util.spec_from_file_location(cfg_name,cfg_filename)
+                self.cfg_file = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(self.cfg_file)
+                self.say("loaded cfg_file: "+cfg_name+".py",2)
+            except BaseException as e:
+                if self.debug_modules:
+                    raise e
+                else:
+                    self.say("ERROR loading "+cfg_filename+ ' enable debug_modules to see more')
+                self.enabled = False
+
+        # self.cfg_json: Check for and load from 
+        json_name = "config_"+self.__class__.__name__+".json"
+        json_filename = os.path.join(os.path.dirname(__file__), "../logmonitors/config_json", json_name)
+        if os.path.exists(json_filename):
+            try:
+                with open(json_filename) as f:
+                    self.cfg_json = json.load(f)
+                    self.say("loaded cfg_json: "+json_name,2)
+            except BaseException as e:
+                if 1==0 and self.debug_modules:
+                    raise e
+                else:
+                    self.say("ERROR loading "+json_name+' enable debug_modules to see more')
+                self.enabled = False
+
+
+
     def load_config(self, cfg):
+        # self.cfg: Also load from main config file
         self.cfg = cfg
         try:
             self.init_cfg()
@@ -168,7 +207,7 @@ class Logmonitor:
             return self.readers
         except AttributeError:
             msg = "ERROR: No readers defined in "+self.__class__.__name__
-            out.say(msg); out.log(msg)
+            self.say(msg); self.log(msg)
             
     def print_error(self,e):
         error_msg = "ERROR: An error, "+str(type(e))+" "+str(e)+", occured in "+self.__class__.__name__+" and it has been disabled. \n"
@@ -209,12 +248,14 @@ class Logmonitor:
 
     def send_email(self, email_from, email_to, email_subject, email_body, bcc=None):
         if self.email_all_monitors_to and self.email_all_monitors_to not in email_to and self.force_recipient is None:
+            self.log("Sent email to "+self.email_all_monitors_to +' (email_all_monitors_to), "'+email_subject+'"')
             out.send_email(email_from, self.email_all_monitors_to, email_subject, email_body, bcc)
         out.send_email(email_from, email_to, email_subject, email_body, bcc)
+        self.log("Sent email to "+email_to+', "'+email_subject+'"')
 
 
-    def say(self,text):
-        out.say(self.__class__.__name__+" "+text)
+    def say(self,text,verbose=0):
+        out.say(self.__class__.__name__+" "+text,verbose)
 
     def log(self,text):
         out.log(self.__class__.__name__+" "+text)
