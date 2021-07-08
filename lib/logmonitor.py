@@ -84,6 +84,8 @@ class Logmonitor:
 
         else:
             self.dstate = dynamicstate.DynamicState(self.state["_dynamic_state"])
+            # Don't save this twice in memory, it can be fairly large
+            del(self.state["_dynamic_state"])
 
 
     def load_file_configs(self):
@@ -153,6 +155,8 @@ class Logmonitor:
                     if self.debug_modules:
                         raise e
                     self.print_error(e)
+            # Don't save this twice in memory, it can be fairly large
+            del(self.state["_dynamic_state"])
 
     
 

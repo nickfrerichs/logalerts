@@ -165,11 +165,25 @@ class DynamicList:
         items = set()
         for d in self.session_list:
             items.add(d[key])
+            
         return list(items)
 
     def filter(self, key, value):
         items = list()
         for d in self.session_list:
             if d[key] == value:
+                items.append(d)
+        return items
+
+    # Untested, wrote this and didn't use it
+    def adv_filter(self, filters):
+        items = list()
+        for d in self.session_list:
+            match = True
+            for f in filters:
+                if d[f[0]] == f[1]:
+                    continue
+                match = False
+            if match:
                 items.append(d)
         return items
