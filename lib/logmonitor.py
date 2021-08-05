@@ -20,7 +20,7 @@ class Logmonitor:
     state_root_path = config.STATE_ROOT_PATH
     mail_server = config.MAILSERVER
 
-    max_emails = 50
+    max_emails = 100
     max_email_length = 1048576
 
     current_timestamp = int(time.time())
@@ -49,8 +49,8 @@ class Logmonitor:
 
         self.state = {}
         self.dstate = None
-        self.__load_state()
         self.queued_emails = list()
+        self.__load_state()
         self.check_count = 0
         
     # Decorator to be used to keep track of how long functions take
@@ -76,7 +76,8 @@ class Logmonitor:
         except FileNotFoundError:
             self.state = {
                 "monitor_name" : self.__class__.__name__,
-                "_dynamic_state" : {}
+                "_dynamic_state" : {},
+                "mail_queue" : []
             }
 
         if self.state.get("_dynamic_state") is None:
@@ -87,6 +88,14 @@ class Logmonitor:
             # Don't save this twice in memory, it can be fairly large
             del(self.state["_dynamic_state"])
 
+
+        if self.state.get("mail_queue") is None:
+            self.state["mail_queue"] = []
+
+        # Add any queued emails that were sent to disk
+        for e in self.state["mail_queue"]:
+            self.queue_email(e["to"],e["subject"],e["body"])
+        self.state["mail_queue"] = []
 
     def load_file_configs(self):
         # self.cfg_file: Check for and load config from dedicated file first
@@ -246,16 +255,29 @@ class Logmonitor:
     def send_emails(self):
         if self.enabled == False:
             return
+
         for e in self.queued_emails:
-            self.send_email(config.FROM_ADDRESS, e["to"], e["subject"], e["body"])
+            success = self.send_email(config.FROM_ADDRESS, e["to"], e["subject"], e["body"])
+    
+           # print(result)
+            if success == False and len(self.state["mail_queue"]) <= self.max_emails:
+
+                self.state["mail_queue"].append({
+                    "to"        : e["to"],
+                    "subject"   : e["subject"],
+                    "body"      : e["body"]
+                })
 
 
     def send_email(self, email_from, email_to, email_subject, email_body, bcc=None):
+        success = False
         if self.email_all_monitors_to and self.email_all_monitors_to not in email_to and self.force_recipient is None:
             self.log("Sent email to "+self.email_all_monitors_to +' (email_all_monitors_to), "'+email_subject+'"')
             out.send_email(email_from, self.email_all_monitors_to, email_subject, email_body, bcc)
-        out.send_email(email_from, email_to, email_subject, email_body, bcc)
-        self.log("Sent email to "+email_to+', "'+email_subject+'"')
+        success = out.send_email(email_from, email_to, email_subject, email_body, bcc)
+        if success == True:
+            self.log("Sent email to "+email_to+', "'+email_subject+'"')
+        return success
 
 
     def say(self,text,verbose=0):

@@ -60,12 +60,18 @@ def send_email(email_from, email_to, email_subject, email_body, bcc=None):
         msg['Subject'] = email_subject
         msg.set_payload(email_body)
 
-        mailserver = smtplib.SMTP("mail.uni.edu")
         try:
+            mailserver = smtplib.SMTP(config.MAILSERVER)
             mailserver.sendmail(msg['From'],msg['To'].split(","), msg.as_string())
+            mailserver.quit()
+            return True
         except:
-            say("There was an error sending an email with Subject: "+email_subject)
-        mailserver.quit()
+            msg = "There was an error sending an email with Subject: "+email_subject
+            say(msg)
+            out(msg)
+            return False
+        
+
 
 # Not sure I'll use this, but just in case
 def send_email_mime(email_from, email_to, email_subject, email_body, bcc=None):
@@ -105,6 +111,6 @@ def send_email_mime(email_from, email_to, email_subject, email_body, bcc=None):
             else:
                 msg['Bcc'] = ",".join(bcc)
 
-        mailserver = smtplib.SMTP("mail.uni.edu")
+        mailserver = smtplib.SMTP(config.MAILSERVER)
         mailserver.send_message(msg)
         mailserver.quit()

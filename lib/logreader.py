@@ -116,7 +116,7 @@ class Filereader(Logreader):
 
         # If I decide to use glob.glob, could concat results together so that readers could share those
         for log_file in log_files:
-
+            
             temp_file = self.__get_temp_filepath(log_file)
             # Check if another reader already initialized this file
             if temp_file in self.initialized_log_files:
@@ -132,6 +132,12 @@ class Filereader(Logreader):
                 shutil.move(temp_file,extra_file)
                 self.temp_files.append(extra_file)
                 print("Existing log file was found by "+self.__class__.__name__+", it will also be scanned: "+extra_file)
+
+            # Check for old temp files
+            for extra_file in glob.glob(temp_file+"_*"):
+                print("Existing log file was found by "+self.__class__.__name__+", it will also be scanned: "+extra_file)
+                self.temp_files.append(extra_file)
+
             if self.copy_instead_of_move:
                 shutil.copy(log_file, temp_file)
             else:
