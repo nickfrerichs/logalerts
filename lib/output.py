@@ -68,7 +68,7 @@ def send_email(email_from, email_to, email_subject, email_body, bcc=None):
         except:
             msg = "There was an error sending an email with Subject: "+email_subject
             say(msg)
-            out(msg)
+            error(msg)
             return False
         
 
