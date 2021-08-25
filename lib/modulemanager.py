@@ -46,15 +46,22 @@ def load_module(mod_name, mod_type, cfg):
             mod_class.load_config(cfg)
         
         except AttributeError as e:
-            out.say(mod_type+" module "+mod_name+" not loaded, does it contain class named "+mod_name+"?")
+            
             if debug_modules:
                 raise e
+            msg = mod_type+" module "+mod_name+" not loaded, does it contain class named "+mod_name+"?"
+            out.say(msg)
+            out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Error loading " +mod_type+" "+mod_name ,msg)
+
             return None
 
         except BaseException as e:
             if debug_modules:
                 raise e
-            out.say(mod_type+" module "+mod_name+" not loaded, ERROR: "+str(type(e))+" occured while loading.")
+            msg = mod_type+" module "+mod_name+" not loaded, ERROR: "+str(type(e))+" occured while loading."
+            out.say(msg)
+            out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Error loading " +mod_type+" "+mod_name ,msg)
+            
             return None
     
     return mod_class

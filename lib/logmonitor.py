@@ -13,6 +13,7 @@ import config
 import output as out
 import glob
 import importlib
+import sqlite3
 
 class Logmonitor:
 
@@ -49,6 +50,7 @@ class Logmonitor:
 
         self.state = {}
         self.dstate = None
+        self.sqlstate = SQLState(os.path.join(self.state_root_path,self.__class__.__name__+".sqlite"))
         self.queued_emails = list()
         self.__load_state()
         self.check_count = 0
@@ -65,6 +67,10 @@ class Logmonitor:
                 return value
             return wrapper
         return inner
+
+
+
+
 
 
     def __load_state(self):
@@ -151,6 +157,8 @@ class Logmonitor:
                 self.state[key] = data[key]
 
 
+
+
     def save_state(self):
         if self.enabled:
             if os.path.exists(self.state_root_path) == False:
@@ -166,6 +174,11 @@ class Logmonitor:
                     self.print_error(e)
             # Don't save this twice in memory, it can be fairly large
             del(self.state["_dynamic_state"])
+
+            if self.sqlstate.db is not None:
+                self.sqlstate.close()
+                print("DB Closed "+self.__class__.__name__)
+
 
     
 
@@ -290,7 +303,67 @@ class Logmonitor:
         out.debug(self.__class__.__name__+" "+text)
 
 
+class SQLState:
 
+    def __init__(self, path):
+        self.db = None
+        self.cur = None
+        self.db_path = path
+        self.expires = {}
+
+    # Ensure database is loaded, initialize a table (basically create it if it doesn't exist)
+    def init_table(self, table_name, schema, expire=0):
+        if self.db == None:
+            self.__load_sqlstate()
+
+        # Ensure table exists with expire column for when the data should be purged
+        self.cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='%s'" % (table_name))
+        if self.cur.fetchone()[0] < 1:        
+            self.cur.execute("CREATE TABLE "+table_name+" ("+schema+", logalerts_expire integer)")
+            self.cur.execute("INSERT INTO logalerts_expire VALUES (?,?)", (table_name,expire))
+            self.db.commit()
+
+        # Add the expire value to the dictionary so it can be easily used later
+        self.cur.execute("SELECT table_name, expire FROM logalerts_expire WHERE table_name = ?", (table_name,))
+        row = self.cur.fetchone()
+        self.expires[row[0]] = row[1]
+
+
+        # Purge all data older than the expire time
+        self.cur.execute("DELETE FROM "+table_name+" WHERE logalerts_expire != 0 AND logalerts_expire < ?",(int(time.time()),))
+        # print("Purged rows: "+str(self.cur.rowcount))
+        self.db.commit()
+
+    def insert_values(self, table_name, values):
+
+        if self.expires[table_name] == 0:
+            values.append(0)
+        else:
+            values.append(int(time.time())+self.expires[table_name])
+
+        cols = ""
+        for i in range(1,len(values)):
+            cols += "?,"
+        cols += "?"
+        self.cur.execute("insert into "+table_name+" values ("+cols+")",values)
+
+    def __load_sqlstate(self):
+        self.db = sqlite3.connect(self.db_path)
+        self.cur = self.db.cursor()
+
+        # If new, create table to track expire times for other future tables
+        self.cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='logalerts_expire'")
+        if self.cur.fetchone()[0] < 1:        
+            self.cur.execute("CREATE TABLE logalerts_expire (table_name text, expire integer)")
+            self.db.commit()
+
+
+    def __save_sqlstate(self):
+        self.db.commit()
+        self.db.close()
+
+    def close(self):
+        self.__save_sqlstate()
 
 # Decorator example, for future reference
 def monitorcheck(func):

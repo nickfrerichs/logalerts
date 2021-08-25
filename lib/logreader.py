@@ -25,6 +25,11 @@ class Logreader:
         self.state = {}
         self.__load_state()
 
+        try:
+            self.EMAIL_ERRORS_TO = config.ENABLED_READERS[self.__class__.__name__]["email_errors_to"]
+        except (AttributeError, KeyError):
+            self.EMAIL_ERRORS_TO = config.EMAIL_ERRORS_TO
+
         # Could check that everything is defined and print errors / disable the reader up front
 
     def load_config(self, cfg):
@@ -58,11 +63,12 @@ class Logreader:
                     if self.debug_modules:
                         raise e
                     self.print_error(e)
+            print(self.EMAIL_ERRORS_TO)
 
     def print_error(self,e):
         error_msg = "ERROR: An error, "+str(type(e))+" "+str(e)+", occured in "+self.__class__.__name__+" and it has been disabled. \n"
         error_msg += str(traceback.format_exc())
-        out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Error in: "+self.__class__.__name__, error_msg)
+        out.send_email(self.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Error in: "+self.__class__.__name__, error_msg)
         print(error_msg)
 
 
@@ -105,7 +111,7 @@ class Filereader(Logreader):
         if self.state["last_error_count"] > 1000:
             self.enabled = False
             msg = "Too many errors on last run: "+str(self.state["last_error_count"])
-            out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader disabled: "+self.__class__.__name__,msg)
+            out.send_email(self.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Reader disabled: "+self.__class__.__name__,msg)
             return
 
         log_files = self.cfg["files"]
@@ -171,7 +177,7 @@ class Filereader(Logreader):
                             # Over 100MB of error text, time to disable
                             if sys.getsizeof(self.errors) > 104857600:
                                 msg = "Too many errors current run: "+str(len(self.errors))
-                                out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader disabled: "+self.__class__.__name__, msg)
+                                out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Reader disabled: "+self.__class__.__name__, msg)
                                 self.enabled = False
                                 return
                             
@@ -209,7 +215,7 @@ class Filereader(Logreader):
             else:
                 email_errors = self.errors
 
-            out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader errors: "+self.__class__.__name__, "\n".join(email_errors))
+            out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Reader errors: "+self.__class__.__name__, "\n".join(email_errors))
 
         try:
             # This logic is annoying and duplicated, anymore and it should be re-written using variables or classes
@@ -217,7 +223,7 @@ class Filereader(Logreader):
                 self.state["missed_read_watchdogs"] += 1
                 if self.state["missed_read_watchdogs"] > self.watchdog["min_read_runs_allowed"]:
                     msg = "Reader "+self.__class__.__name__+" has read less than "+str(self.watchdog["min_read_count"]) + " matching lines "+str(self.state["missed_read_watchdogs"])+" times."
-                    out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader watchdog notice: "+self.__class__.__name__, msg)
+                    out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Reader watchdog notice: "+self.__class__.__name__, msg)
             else:
                 self.state["missed_read_watchdogs"] = 0
 
@@ -225,7 +231,7 @@ class Filereader(Logreader):
                 self.state["missed_none_watchdogs"] += 1
                 if self.state["missed_none_watchdogs"] > self.watchdog["min_none_runs_allowed"]:
                     msg = "Reader "+self.__class__.__name__+" has read less than "+str(self.watchdog["min_none_count"]) + " \"None\" lines "+str(self.state["missed_none_watchdogs"])+" times."
-                    out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Reader watchdog notice: "+self.__class__.__name__, msg)
+                    out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Reader watchdog notice: "+self.__class__.__name__, msg)
             else:
                 self.state["missed_none_watchdogs"] = 0
 
