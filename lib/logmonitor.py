@@ -177,7 +177,7 @@ class Logmonitor:
 
             if self.sqlstate.db is not None:
                 self.sqlstate.close()
-                print("DB Closed "+self.__class__.__name__)
+                out.say("DB Closed "+self.__class__.__name__,2)
 
 
     

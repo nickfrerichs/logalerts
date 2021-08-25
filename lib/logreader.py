@@ -63,7 +63,7 @@ class Logreader:
                     if self.debug_modules:
                         raise e
                     self.print_error(e)
-            print(self.EMAIL_ERRORS_TO)
+
 
     def print_error(self,e):
         error_msg = "ERROR: An error, "+str(type(e))+" "+str(e)+", occured in "+self.__class__.__name__+" and it has been disabled. \n"

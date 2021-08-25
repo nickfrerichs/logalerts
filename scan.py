@@ -64,7 +64,7 @@ def run_daemon():
             break
         
         sleep_time = max(0,next_run - int(time.time()))
-        out.say("(Next scan starts in "+str(sleep_time)+" seconds.)\n")
+        out.say("(Next scan starts at "+str(datetime.datetime.fromtimestamp(next_run))+")\n")
         sys.stdout.flush()
 
 
