@@ -7,6 +7,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
 import config
 
 
+try:
+    DEBUG_MODULES = config.DEBUG_MODULES
+except AttributeError:
+    DEBUG_MODULES = False
+
 def log(text, verbose=0):
     if verbose <= config.args.verbose:
         with open (config.RUNLOG_PATH,'a') as f:
@@ -62,14 +67,17 @@ def send_email(email_from, email_to, email_subject, email_body, bcc=None):
 
         try:
             mailserver = smtplib.SMTP(config.MAILSERVER)
-            mailserver.sendmail(msg['From'],msg['To'].split(","), msg.as_string())
+            mailserver.sendmail(msg['From'],msg['To'].split(","), msg.as_string().encode('utf-8'))
             mailserver.quit()
             return True
-        except:
-            msg = "There was an error sending an email with Subject: "+email_subject
-            say(msg)
-            error(msg)
-            return False
+        except BaseException as e:
+            if DEBUG_MODULES:
+                raise e
+            else:
+                msg = "There was an error sending an email with Subject: "+email_subject
+                say(msg)
+                error(msg)
+                return False
         
 
 
