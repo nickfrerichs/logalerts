@@ -43,6 +43,11 @@ class Logmonitor:
         except AttributeError:
             self.force_recipient = None
 
+        try:
+            self.EMAIL_ERRORS_TO = config.ENABLED_READERS[self.__class__.__name__]["email_errors_to"]
+        except (AttributeError, KeyError):
+            self.EMAIL_ERRORS_TO = config.EMAIL_ERRORS_TO
+
         self.enabled = True    
         self.cfg = {}
         self.load_file_configs()
@@ -238,13 +243,13 @@ class Logmonitor:
     def print_error(self,e):
         error_msg = "ERROR: An error, "+str(type(e))+" "+str(e)+", occured in "+self.__class__.__name__+" and it has been disabled. \n"
         error_msg += str(traceback.format_exc())
-        out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Error in: "+self.__class__.__name__, error_msg)
+        out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Error in: "+self.__class__.__name__, error_msg)
         print(error_msg)
 
     def queue_email(self, email_to, email_subject, email_body):
         if len(self.queued_emails) >= self.max_emails:
             msg = "Max queued emails reached, by "+self.__class__.__name__+", skipping"
-            out.send_email(config.ERRORS_FROM_ADDRESS, config.EMAIL_ERRORS_TO, "Max queued emails: "+self.__class__.__name__, msg)
+            out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Max queued emails: "+self.__class__.__name__, msg)
             print(msg)
             return
 
