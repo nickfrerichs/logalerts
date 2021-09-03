@@ -48,6 +48,8 @@ class Logmonitor:
         except (AttributeError, KeyError):
             self.EMAIL_ERRORS_TO = config.EMAIL_ERRORS_TO
 
+        self.errors = []
+
         self.enabled = True    
         self.cfg = {}
         self.load_file_configs()
@@ -201,11 +203,31 @@ class Logmonitor:
             if self.debug_modules:
                 raise e
             traceback.print_tb(e.__traceback__)
-            self.print_error(e)
-            self.enabled = False
+            msg = "ERROR in "+self.__class__.__name__+"\n"
+            msg += str(traceback.format_exc())
+            self.errors.append(msg)
+            out.error(msg)
+
+            if sys.getsizeof(self.errors) > 104857600:
+                msg = "Too many errors current run: "+str(len(self.errors))
+                out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Monitor disabled: "+self.__class__.__name__, msg)
+                self.enabled = False
+                return            
+
+
 
 
     def handle_complete(self):
+
+        # Email errors encountered while during this scan
+        if len(self.errors) > 0:
+            if len(self.errors) >= 25:
+                email_errors = [self.__class__.__name__+" - too many errors "+str(len(self.errors)-25)+" truncated."]
+                email_errors += self.errors[0:25]
+            else:
+                email_errors = self.errors
+            out.send_email(config.ERRORS_FROM_ADDRESS, self.EMAIL_ERRORS_TO, "Monitor errors: "+self.__class__.__name__, "\n".join(email_errors))
+
         if self.enabled == False:
             return
         try:
